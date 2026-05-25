@@ -1,5 +1,6 @@
 "use client"
 
+import { useApp } from "@/context/AppContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,8 @@ import { ProjectForm } from "@/components/ProjectForm"
 import { TasksTable } from "@/components/TaskTable" 
 
 export default function DashboardPage() {
+  const { projects, deleteProject } = useApp()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-7xl mx-auto">
@@ -189,112 +192,85 @@ export default function DashboardPage() {
 
           {/* Tab: Projects */}
           <TabsContent value="projects" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  title: "E-commerce Platform",
-                  description: "Plataforma de comercio electrónico con Next.js",
-                  status: "En progreso",
-                  progress: 65,
-                  team: 5,
-                },
-                {
-                  title: "Mobile App",
-                  description: "Aplicación móvil con React Native",
-                  status: "En revisión",
-                  progress: 90,
-                  team: 3,
-                },
-                {
-                  title: "Dashboard Analytics",
-                  description: "Panel de análisis con visualizaciones",
-                  status: "Planificado",
-                  progress: 20,
-                  team: 4,
-                },
-                {
-                  title: "API Gateway",
-                  description: "Microservicios con Node.js",
-                  status: "En progreso",
-                  progress: 45,
-                  team: 6,
-                },
-                {
-                  title: "Design System",
-                  description: "Librería de componentes reutilizables",
-                  status: "Completado",
-                  progress: 100,
-                  team: 2,
-                },
-                {
-                  title: "Marketing Website",
-                  description: "Sitio web institucional",
-                  status: "En progreso",
-                  progress: 75,
-                  team: 3,
-                },
-              ].map((project, i) => (
-                <Card key={i}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg">{project.title}</CardTitle>
-                        <CardDescription>{project.description}</CardDescription>
-                      </div>
-                      <Badge
-                        variant={
-                          project.status === "Completado"
-                            ? "default"
-                            : project.status === "En revisión"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {project.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-muted-foreground">Progreso</span>
-                          <span className="font-medium">{project.progress}%</span>
+            {projects.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No hay proyectos. Crea uno con el botón de arriba.
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {projects.map((project) => (
+                  <Card key={project.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg">{project.name}</CardTitle>
+                          <CardDescription>{project.description}</CardDescription>
                         </div>
-                        <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all"
-                            style={{ width: `${project.progress}%` }}
-                          />
+                        <Badge
+                          variant={
+                            project.status === "Completado"
+                              ? "default"
+                              : project.status === "En revisión"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
+                          {project.status}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between text-sm mb-2">
+                            <span className="text-muted-foreground">Progreso</span>
+                            <span className="font-medium">{project.progress}%</span>
+                          </div>
+                          <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary transition-all"
+                              style={{ width: `${project.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="h-4 w-4"
+                            >
+                              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                              <circle cx="9" cy="7" r="4" />
+                              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            {project.memberIds.length} miembro(s)
+                          </div>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost">
+                              Ver detalles
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => deleteProject(project.id)}
+                            >
+                              Eliminar
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                          >
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                          </svg>
-                          {project.team} miembros
-                        </div>
-                        <Button size="sm" variant="ghost">
-                          Ver detalles
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Tab: Team */}

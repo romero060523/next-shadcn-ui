@@ -20,27 +20,77 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Spinner } from "@/components/ui/spinner"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useApp, Priority, ProjectStatus } from "@/context/AppContext"
 
 export function ProjectForm() {
+  const { addProject, members } = useApp()
   const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     category: "",
-    priority: "",
+    priority: "" as Priority | "",
+    memberIds: [] as string[],
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const toggleMember = (userId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      memberIds: prev.memberIds.includes(userId)
+        ? prev.memberIds.filter(id => id !== userId)
+        : [...prev.memberIds, userId],
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    
-    // Limpiar y cerrar
-    setFormData({ name: "", description: "", category: "", priority: "" })
+    setError("")
+
+    // Validaciones
+    if (!formData.name.trim()) {
+      setError("El nombre del proyecto es obligatorio.")
+      return
+    }
+    if (!formData.category) {
+      setError("Debes seleccionar una categoría.")
+      return
+    }
+    if (!formData.priority) {
+      setError("Debes seleccionar una prioridad.")
+      return
+    }
+
+    // Simular petición al backend
+    setLoading(true)
+    await new Promise(res => setTimeout(res, 1500))
+    setLoading(false)
+
+    addProject({
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      category: formData.category,
+      priority: formData.priority as Priority,
+      status: "Planificado" as ProjectStatus,
+      progress: 0,
+      memberIds: formData.memberIds,
+    })
+
+    setSuccess(true)
+    await new Promise(res => setTimeout(res, 800))
+    setSuccess(false)
+    setFormData({ name: "", description: "", category: "", priority: "", memberIds: [] })
     setOpen(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(val) => { setOpen(val); setError("") }}>
       <DialogTrigger asChild>
         <Button>
           <svg
@@ -59,7 +109,8 @@ export function ProjectForm() {
           Nuevo Proyecto
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[525px]">
+
+      <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Crear Nuevo Proyecto</DialogTitle>
@@ -67,19 +118,38 @@ export function ProjectForm() {
               Completa la información del proyecto. Click en guardar cuando termines.
             </DialogDescription>
           </DialogHeader>
+
           <div className="grid gap-4 py-4">
+
+            {/* Alert de error */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Alert de éxito */}
+            {success && (
+              <Alert>
+                <AlertDescription>¡Proyecto creado exitosamente!</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Nombre */}
             <div className="grid gap-2">
               <Label htmlFor="name">
-                Nombre del Proyecto <span className="text-red-500">*</span>
+                Nombre del Proyecto <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 placeholder="Mi Proyecto Increíble"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                disabled={loading}
               />
             </div>
 
+            {/* Descripción */}
             <div className="grid gap-2">
               <Label htmlFor="description">Descripción</Label>
               <Input
@@ -87,16 +157,17 @@ export function ProjectForm() {
                 placeholder="Breve descripción del proyecto..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                disabled={loading}
               />
             </div>
 
+            {/* Categoría */}
             <div className="grid gap-2">
-              <Label htmlFor="category">
-                Categoría <span className="text-red-500">*</span>
-              </Label>
+              <Label>Categoría <span className="text-destructive">*</span></Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
+                disabled={loading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona una categoría" />
@@ -111,13 +182,13 @@ export function ProjectForm() {
               </Select>
             </div>
 
+            {/* Prioridad */}
             <div className="grid gap-2">
-              <Label htmlFor="priority">
-                Prioridad <span className="text-red-500">*</span>
-              </Label>
+              <Label>Prioridad <span className="text-destructive">*</span></Label>
               <Select
                 value={formData.priority}
-                onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                onValueChange={(value) => setFormData({ ...formData, priority: value as Priority })}
+                disabled={loading}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona la prioridad" />
@@ -130,12 +201,60 @@ export function ProjectForm() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Miembros del equipo */}
+            <div className="grid gap-2">
+              <Label>Miembros del Equipo</Label>
+              <div className="border rounded-md p-3 space-y-2 max-h-40 overflow-y-auto">
+                {members.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No hay miembros disponibles.</p>
+                ) : (
+                  members.map((m) => (
+                    <div key={m.userId} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`member-${m.userId}`}
+                        checked={formData.memberIds.includes(m.userId)}
+                        onCheckedChange={() => toggleMember(m.userId)}
+                        disabled={loading}
+                      />
+                      <label
+                        htmlFor={`member-${m.userId}`}
+                        className="text-sm cursor-pointer flex-1"
+                      >
+                        {m.name}
+                        <span className="text-muted-foreground ml-1">— {m.role}</span>
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+              {formData.memberIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {formData.memberIds.length} miembro(s) seleccionado(s)
+                </p>
+              )}
+            </div>
           </div>
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
               Cancelar
             </Button>
-            <Button type="submit">Crear Proyecto</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Spinner className="h-4 w-4" />
+                  Guardando...
+                </span>
+              ) : (
+                "Crear Proyecto"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
